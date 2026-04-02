@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+<meta charset="UTF-8">
+<title>משחק לימוד מילים</title>
+
+<style>
+body {
+    font-family: Arial;
+    text-align: center;
+    background: #f0f4f8;
+}
+
+h1 {
+    color: #333;
+}
+
+#game {
+    display: grid;
+    grid-template-columns: repeat(4, 120px);
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.card {
+    width: 120px;
+    height: 120px;
+    background: #4da6ff;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 18px;
+    border-radius: 10px;
+}
+
+.card.revealed {
+    background: #2ecc71;
+}
+
+#score {
+    margin-top: 15px;
+    font-size: 20px;
+}
+</style>
+
+</head>
+<body>
+
+<h1>🎮 משחק זיכרון למילים</h1>
+
+<input type="file" id="fileInput">
+<p>העלה קובץ CSV עם מילים ותרגום</p>
+
+<div id="score">ניקוד: 0</div>
+<div id="game"></div>
+
+<script>
+let words = [];
+let cards = [];
+let first = null;
+let second = null;
+let score = 0;
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+        const lines = event.target.result.split('\n');
+
+        words = lines.map(line => {
+            const [eng, heb] = line.split(',');
+            return { eng: eng.trim(), heb: heb.trim() };
+        }).filter(w => w.eng && w.heb);
+
+        startGame();
+    };
+
+    reader.readAsText(e.target.files[0]);
+});
+
+function startGame() {
+    const game = document.getElementById('game');
+    game.innerHTML = '';
+    score = 0;
+    updateScore();
+
+    cards = [];
+
+    words.forEach(w => {
+        cards.push({ text: w.eng, match: w.heb });
+        cards.push({ text: w.heb, match: w.eng });
+    });
+
+    cards.sort(() => Math.random() - 0.5);
+
+    cards.forEach(card => {
+        const div = document.createElement('div');
+        div.classList.add('card');
+        div.textContent = '?';
+
+        div.onclick = () => flipCard(div, card);
+
+        game.appendChild(div);
+    });
+}
+
+function flipCard(div, card) {
+    if (div.classList.contains('revealed') || second) return;
+
+    div.textContent = card.text;
+
+    if (!first) {
+        first = { div, card };
+    } else {
+        second = { div, card };
+
+        if (first.card.match === second.card.text) {
+            first.div.classList.add('revealed');
+            second.div.classList.add('revealed');
+            score += 10;
+            updateScore();
+            first = null;
+            second = null;
+        } else {
+            setTimeout(() => {
+                first.div.textContent = '?';
+                second.div.textContent = '?';
+                first = null;
+                second = null;
+            }, 800);
+        }
+    }
+}
+
+function updateScore() {
+    document.getElementById('score').textContent = "ניקוד: " + score;
+}
+</script>
+
+</body>
+</html>
